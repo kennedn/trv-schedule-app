@@ -1,0 +1,19 @@
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+namespace: default
+
+commonLabels:
+    app: trv-schedule
+
+secretGenerator:
+- name: trv-schedule-basic-auth
+  behavior: create
+  files:
+  - auth=config/htpasswd
+#- name: trv-schedule-git-key
+#  behavior: create
+#  files:
+#  - id_rsa=config/github.pem

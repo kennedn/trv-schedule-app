@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meross Schedule Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/spark-md5/spark-md5.min.js"></script>
+    <style>
+        canvas {
+            max-width: 800px;
+            max-height: 400px;
+        }
+        .input-container {
+            margin-bottom: 10px;
+        }
+        .input-container label {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="input-container">
+        <label for="device-ip">Device IP:</label>
+        <input type="text" id="device-ip" value="192.168.1.170">
+        <button id="fetchScheduleButton">Fetch Schedule</button>
+    </div>
+    <canvas id="scheduleChart"></canvas>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("fetchScheduleButton").addEventListener("click", fetchSchedule);
+        });
+
+        async function fetchSchedule() {
+            console.log("fetchSchedule() called");
+
+            const ip = document.getElementById("device-ip").value;
+            if (!ip) {
+                alert("Please enter the device IP address.");
+                return;
+            }
+
+            const key = "ec4815fc145e284c827d89001edd47b5"; // Replace with the key used during device onboarding
+            const ts = 0; // Timestamp, can be left as 0
+            const messageId = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+                .map(b => b.toString(16).padStart(2, "0"))
+                .join("");
+
+            // Compute MD5 using SparkMD5
+            const sign = SparkMD5.hash(`${messageId}${key}${ts}`);
+
+            const payload = {
+                header: {
+                    from: "http://10.10.10.1/config",
+                    messageId,
+                    method: "GET",
+                    namespace: "Appliance.Hub.Mts100.ScheduleB",
+                    payloadVersion: 1,
+                    sign,
+                    timestamp: ts,
+                },
+                payload: { schedule: [{ id: "03000BDF" }] },
+            };
+
+            try {
+                const response = await fetch(`http://${ip}/config`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/plain",
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log("Fetched data:", data);
+                // Process and render the data
+            } catch (error) {
+                console.error("Error fetching schedule:", error);
+            }
+        }
+    </script>
+</body>
+</html>
+

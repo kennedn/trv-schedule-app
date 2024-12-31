@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: trv-schedule
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: trv-schedule-basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
+    nginx.ingress.kubernetes.io/server-snippet: |
+      satisfy any;
+      allow 192.168.1.0/24;
+      deny all;
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - schedule.kennedn.com
+    secretName: trv-schedule-cert
+  ingressClassName: public
+  rules:
+  - host: schedule.kennedn.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: trv-schedule
+            port:
+              number: 8888
